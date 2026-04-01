@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AI Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { background:#111; color:white; font-family:Arial; }
+input, button { margin:5px; padding:10px; }
+canvas { margin-top:20px; }
+</style>
+</head>
+
+<body>
+
+<h2>AI Student Analyzer 🚀</h2>
+
+<div id="auth">
+<input id="username" placeholder="Username">
+<input id="password" placeholder="Password">
+<button onclick="signup()">Signup</button>
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" style="display:none;">
+<button onclick="logout()">Logout</button><br>
+
+<input id="text" placeholder="How do you feel?"><br>
+<input id="screen" placeholder="Screen Time"><br>
+<input id="sleep" placeholder="Sleep"><br>
+<input id="study" placeholder="Study"><br>
+<input id="stress" placeholder="Stress"><br>
+
+<button onclick="analyze()">Analyze</button>
+<button onclick="downloadReport()">Download Report</button>
+
+<h3 id="result"></h3>
+
+<canvas id="chart1"></canvas>
+<canvas id="chart2"></canvas>
+<canvas id="chart3"></canvas>
+<canvas id="chart4"></canvas>
+</div>
+
+<script>
+function signup(){
+fetch("/signup",{method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username:username.value,password:password.value})})
+.then(()=>alert("Signup Done"));
+}
+
+function login(){
+fetch("/login",{method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({username:username.value,password:password.value})})
+.then(r=>r.json())
+.then(d=>{
+if(d.status=="success"){
+auth.style.display="none";
+app.style.display="block";
+loadCharts();
+}else{
+alert("Invalid login");
+}
+});
+}
+
+function logout(){
+fetch("/logout").then(()=>{
+auth.style.display="block";
+app.style.display="none";
+});
+}
+
+function analyze(){
+fetch("/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+text:text.value,
+screen_time:screen.value,
+sleep:sleep.value,
+study:study.value,
+stress:stress.value,
+date:new Date().toISOString()
+})})
+.then(r=>r.json())
+.then(d=>{
+result.innerHTML=
+"Personality:"+d.personality+
+"<br>Focus:"+d.focus+
+"<br>Score:"+d.score+
+"<br>"+d.feedback;
+
+loadCharts();
+});
+}
+
+function loadCharts(){
+fetch("/history")
+.then(r=>r.json())
+.then(data=>{
+
+let dates = data.map(d=>d[5]);
+let scores = data.map(d=>d[4]);
+let sleep = data.map(d=>d[1]);
+let study = data.map(d=>d[2]);
+let stress = data.map(d=>d[3]);
+
+new Chart(chart1,{type:"line",data:{labels:dates,datasets:[{label:"Score",data:scores}]}});
+
+new Chart(chart2,{type:"bar",data:{labels:dates,datasets:[{label:"Sleep",data:sleep}]}});
+
+new Chart(chart3,{type:"bar",data:{labels:dates,datasets:[{label:"Study",data:study}]}});
+
+new Chart(chart4,{type:"line",data:{labels:dates,datasets:[{label:"Stress",data:stress}]}});
+
+});
+}
+
+function downloadReport(){
+fetch("/report").then(()=>alert("PDF Generated"));
+}
+</script>
+
+</body>
+</html>
